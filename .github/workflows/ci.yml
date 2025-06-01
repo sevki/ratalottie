@@ -1,0 +1,29 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ main ] # Or your default branch
+  pull_request:
+    branches: [ main ] # Or your default branch
+
+jobs:
+  build_and_smoke_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential pkg-config libssl-dev
+
+      - name: Build example
+        run: cargo build --example simple_player --release --verbose
+
+      - name: Run example (smoke test)
+        run: |
+          timeout 10s cargo run --example simple_player --release ||           if [ $? -eq 124 ]; then             echo "Example timed out as expected.";             exit 0;           else             echo "Example exited with error code $?.";             exit $?;           fi
